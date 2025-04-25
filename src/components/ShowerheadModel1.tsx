@@ -12,7 +12,7 @@ interface ShowerheadModelProps {
 export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: ShowerheadModelProps) {
   const group = useRef<THREE.Group>(new THREE.Group());
   const { scene, animations } = useGLTF('/src/assets/animation 1 v5.glb');
-  const { actions, mixer } = useAnimations(animations, group);
+  const { mixer } = useAnimations(animations, group);
   
   useEffect(() => {
     if (scene && animations && onLoadingComplete) {

@@ -74,7 +74,7 @@ function ShowerheadModel({ scrollProgress, onLoadingComplete }: ShowerheadModelP
     }
   };
 
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!group.current) return;
 
     try {

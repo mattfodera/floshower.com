@@ -1,4 +1,13 @@
-function ShowerheadModel1({ scrollProgress }: ShowerheadModelProps) {
+import React, { useRef } from 'react';
+import * as THREE from 'three';
+import { useFrame, useGLTF } from '@react-three/fiber';
+import { MotionValue } from 'framer-motion';
+
+interface ShowerheadModelProps {
+  scrollProgress: MotionValue<number>;
+}
+
+export function ShowerheadModel1({ scrollProgress }: ShowerheadModelProps) {
   const group = useRef<THREE.Group>(new THREE.Group());
   const { scene } = useGLTF('/showerhead3.glb');
   const currentRotation = useRef({ x: 0, y: 0, z: 0 });

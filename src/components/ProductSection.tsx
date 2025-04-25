@@ -1,8 +1,8 @@
 import { useRef, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, Html, useProgress, Float } from '@react-three/drei';
-import * as THREE from 'three';
+import { Canvas } from '@react-three/fiber';
+import { Html, useProgress, Float } from '@react-three/drei';
 import { MotionValue } from 'framer-motion';
+import { ShowerheadModel1 } from './ShowerheadModel1';
 
 function Loader() {
   const { progress } = useProgress();
@@ -15,113 +15,6 @@ function Loader() {
         </div>
       </div>
     </Html>
-  );
-}
-
-interface ShowerheadModelProps {
-  scrollProgress: MotionValue<number>;
-  onLoadingComplete?: () => void;
-}
-
-function ShowerheadModel({ scrollProgress, onLoadingComplete }: ShowerheadModelProps) {
-  const group = useRef<THREE.Group>(new THREE.Group());
-  const { scene } = useGLTF('/showerhead3.glb');
-  const currentRotation = useRef({ x: 0, y: 0, z: 0 });
-  const targetRotation = useRef({ x: 0, y: 0, z: 0 });
-  const currentPosition = useRef({ x: 0, y: 0, z: 0 });
-  const targetPosition = useRef({ x: 0, y: 0, z: 0 });
-  const currentScale = useRef(1);
-  const targetScale = useRef(1);
-
-  // Call onLoadingComplete when the model is loaded
-  if (scene && onLoadingComplete) {
-    onLoadingComplete();
-  }
-
-  const calculatePhaseTransform = (scrollPos: number) => {
-    const baseXRotation = Math.PI / 6;
-    const subtleZRotation = Math.PI / 8;
-
-    if (scrollPos <= 0.25) {
-      const progress = scrollPos * 4;
-      return {
-        rotation: { x: baseXRotation, y: 0, z: 0 },
-        position: { x: -progress * 2, y: 0, z: 0 },
-        scale: 2 - progress
-      };
-    } else if (scrollPos <= 0.75) {
-      const progress = (scrollPos - 0.25) * 2;
-      return {
-        rotation: {
-          x: baseXRotation,
-          y: Math.sin(progress * Math.PI * 2) * Math.PI,
-          z: Math.sin(progress * Math.PI) * subtleZRotation
-        },
-        position: { x: -2, y: 0, z: 0 },
-        scale: 1
-      };
-    } else {
-      const progress = (scrollPos - 0.75) * 4;
-      return {
-        rotation: {
-          x: baseXRotation,
-          y: Math.sin(scrollPos * Math.PI * 2) * Math.PI,
-          z: Math.sin(scrollPos * Math.PI) * subtleZRotation
-        },
-        position: { x: -2, y: 0, z: 0 },
-        scale: 1 - progress * 0.5
-      };
-    }
-  };
-
-  useFrame(() => {
-    if (!group.current) return;
-
-    try {
-      const scrollPos = scrollProgress.get();
-      const transform = calculatePhaseTransform(scrollPos);
-
-      targetRotation.current = transform.rotation;
-      targetPosition.current = transform.position;
-      targetScale.current = transform.scale;
-
-      currentRotation.current = {
-        x: THREE.MathUtils.lerp(currentRotation.current.x, targetRotation.current.x, 0.1),
-        y: THREE.MathUtils.lerp(currentRotation.current.y, targetRotation.current.y, 0.1),
-        z: THREE.MathUtils.lerp(currentRotation.current.z, targetRotation.current.z, 0.1)
-      };
-      currentPosition.current = {
-        x: THREE.MathUtils.lerp(currentPosition.current.x, targetPosition.current.x, 0.1),
-        y: THREE.MathUtils.lerp(currentPosition.current.y, targetPosition.current.y, 0.1),
-        z: THREE.MathUtils.lerp(currentPosition.current.z, targetPosition.current.z, 0.1)
-      };
-      currentScale.current = THREE.MathUtils.lerp(currentScale.current, targetScale.current, 0.1);
-
-      group.current.rotation.set(
-        currentRotation.current.x,
-        currentRotation.current.y,
-        currentRotation.current.z
-      );
-      group.current.position.set(
-        currentPosition.current.x,
-        currentPosition.current.y,
-        currentPosition.current.z
-      );
-      group.current.scale.setScalar(currentScale.current);
-    } catch (error) {
-      console.error('Error updating model transform:', error);
-    }
-  });
-
-  return (
-    <Float speed={2} rotationIntensity={0} floatIntensity={1}>
-      <primitive 
-        ref={group} 
-        object={scene} 
-        position={[0, 0, 0]}
-        scale={window.innerWidth <= 768 ? 1 : 2.5}
-      />
-    </Float>
   );
 }
 
@@ -143,14 +36,14 @@ export default function ProductSection({
       <Canvas
         className="w-full h-full"
         camera={{
-          position: [0, 0, 5],
-          fov: 50,
+          position: [1, 1, 1],
+          fov: 25,
           near: 0.1,
           far: 1000,
         }}
       >
         <Suspense fallback={<Loader />}>
-          <ambientLight intensity={0.5} />
+          <ambientLight intensity={1} />
           <pointLight position={[10, 10, 10]} intensity={1} />
           <spotLight
             position={[0, 10, 0]}
@@ -159,7 +52,9 @@ export default function ProductSection({
             intensity={2}
             castShadow
           />
-          <ShowerheadModel scrollProgress={scrollProgress} onLoadingComplete={onLoadingComplete} />
+          <Float speed={5} rotationIntensity={.1} floatIntensity={0.005}>
+            <ShowerheadModel1 scrollProgress={scrollProgress} onLoadingComplete={onLoadingComplete} />
+          </Float>
         </Suspense>
       </Canvas>
 

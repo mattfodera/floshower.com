@@ -1,4 +1,4 @@
-import { useRef, Suspense, useEffect } from 'react';
+/*import { useRef, Suspense, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Html, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
@@ -108,7 +108,7 @@ function ShowerheadModel({ scrollProgress }: ShowerheadModelProps) {
     } catch (error) {
       console.error('Error updating model rotation:', error);
     }
-  }); */
+  }); ////////////////////////////////////////////////////////////////////
 
   useEffect(() => {
     return () => {
@@ -170,4 +170,4 @@ export default function ProductSection({
       </div>
     </div>
   );
-}
+}*/

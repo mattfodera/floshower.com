@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame, useGLTF } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
 import { MotionValue } from 'framer-motion';
 
 interface ShowerheadModelProps {
@@ -57,7 +58,7 @@ export function ShowerheadModel1({ scrollProgress }: ShowerheadModelProps) {
     }
   };
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (!group.current) return;
 
     try {

@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Html, useProgress, Float } from '@react-three/drei';
 import { MotionValue } from 'framer-motion';
@@ -35,12 +35,7 @@ export default function ProductSection({
     <div className="w-full h-full">
       <Canvas
         className="w-full h-full"
-        camera={{
-          position: [1, 1, 1],
-          fov: 25,
-          near: 0.1,
-          far: 1000,
-        }}
+        gl={{ preserveDrawingBuffer: true }}
       >
         <Suspense fallback={<Loader />}>
           <ambientLight intensity={1} />

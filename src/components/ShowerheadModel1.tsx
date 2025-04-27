@@ -9,9 +9,11 @@ interface ShowerheadModelProps {
   onLoadingComplete?: () => void;
 }
 
+const glbModel = '/src/assets/showerhead attempt 3 v2.1.1.glb';
+
 export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: ShowerheadModelProps) {
   const group = useRef<THREE.Group>(new THREE.Group());
-  const { scene, animations, cameras } = useGLTF('/src/assets/showerhead attempt 3 v1.2.glb');
+  const { scene, animations, cameras } = useGLTF(glbModel);
   const { mixer } = useAnimations(animations, group);
   const { set } = useThree();
   const [initialAnimationsComplete, setInitialAnimationsComplete] = useState(false);
@@ -20,11 +22,21 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
   const initialTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const initialCameraRef = useRef<THREE.Camera | null>(null);
   const cameraMatrixRef = useRef<THREE.Matrix4 | null>(null);
+  const lightRef = useRef<THREE.Light | null>(null);
   
   const INITIAL_ANIMATION_PERCENTAGE = 0.466;
+  const LIGHT_CHANGE_THRESHOLD = 0.25; // 25% threshold for light color change
   
   useEffect(() => {
     if (scene && animations && onLoadingComplete) {
+      // Find and store the light reference
+      scene.traverse((child) => {
+        if (child.name === "Light001" && child instanceof THREE.Light) {
+          lightRef.current = child;
+          // Start with green
+          child.color.setRGB(0, 1, 0);
+        }
+      });
       onLoadingComplete();
     }
 
@@ -65,7 +77,6 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
         objectAnimation.time = objectInitialPoint;
         mixer.update(0);
         
-        // Store camera matrix at pause point
         if (initialCameraRef.current) {
           cameraMatrixRef.current = initialCameraRef.current.matrix.clone();
           initialCameraRef.current.updateMatrixWorld(true);
@@ -105,6 +116,15 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
         objectAnimation1Ref.current.time = objectTime;
         mixer.update(0);
 
+        // Update light color based on scroll progress
+        if (lightRef.current) {
+          if (scrollPos >= LIGHT_CHANGE_THRESHOLD) {
+            lightRef.current.color.setRGB(1, 0, 0); // Red
+          } else {
+            lightRef.current.color.setRGB(0, 1, 0); // Green
+          }
+        }
+
         // Restore camera position if at initial percentage
         if (scrollPos === 0) {
           initialCameraRef.current.matrix.copy(cameraMatrixRef.current);
@@ -123,4 +143,4 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
   );
 }
 
-useGLTF.preload('/src/assets/showerhead attempt 3 v1.2.glb');
+useGLTF.preload(glbModel);

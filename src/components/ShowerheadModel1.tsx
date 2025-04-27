@@ -11,94 +11,105 @@ interface ShowerheadModelProps {
 
 export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: ShowerheadModelProps) {
   const group = useRef<THREE.Group>(new THREE.Group());
-  const { scene, animations, cameras } = useGLTF('/src/assets/showerhead attempt 2 v6.02.glb');
+  const { scene, animations, cameras } = useGLTF('/src/assets/showerhead attempt 3 v1.2.glb');
   const { mixer } = useAnimations(animations, group);
   const { set } = useThree();
   const [initialAnimationsComplete, setInitialAnimationsComplete] = useState(false);
-  const cameraAnimation2Ref = useRef<THREE.AnimationAction | null>(null);
-  const objectAnimation2Ref = useRef<THREE.AnimationAction | null>(null);
+  const cameraAnimation1Ref = useRef<THREE.AnimationAction | null>(null);
+  const objectAnimation1Ref = useRef<THREE.AnimationAction | null>(null);
+  const initialTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initialCameraRef = useRef<THREE.Camera | null>(null);
+  const cameraMatrixRef = useRef<THREE.Matrix4 | null>(null);
+  
+  const INITIAL_ANIMATION_PERCENTAGE = 0.466;
   
   useEffect(() => {
     if (scene && animations && onLoadingComplete) {
       onLoadingComplete();
     }
 
-    // Set up the initial camera (Camera1)
     if (cameras && cameras.length > 0) {
       const initialCamera = cameras.find(camera => camera.name === "Camera1");
       if (initialCamera) {
         initialCamera.matrixAutoUpdate = true;
+        initialCameraRef.current = initialCamera;
         set({ camera: initialCamera });
       }
     }
 
     if (mixer && animations) {
-      // Set up initial animations (cameracameraAnimation2 and objectcameraAnimation2)
-      const cameracameraAnimation2 = mixer.clipAction(animations[0]);
-      const objectcameraAnimation2 = mixer.clipAction(animations[2]);
+      const cameraAnimation = mixer.clipAction(animations[0]);
+      const objectAnimation = mixer.clipAction(animations[1]);
 
-      cameracameraAnimation2.setLoop(THREE.LoopOnce, 1);
-      objectcameraAnimation2.setLoop(THREE.LoopOnce, 1);
-      cameracameraAnimation2.clampWhenFinished = true;
-      objectcameraAnimation2.clampWhenFinished = true;
+      cameraAnimation1Ref.current = cameraAnimation;
+      objectAnimation1Ref.current = objectAnimation;
 
-      // Add event listener for animation completion
-      cameracameraAnimation2.reset().play();
-      objectcameraAnimation2.reset().play();
+      cameraAnimation.setLoop(THREE.LoopOnce, 1);
+      objectAnimation.setLoop(THREE.LoopOnce, 1);
+      cameraAnimation.clampWhenFinished = true;
+      objectAnimation.clampWhenFinished = true;
 
-      const onAnimationComplete = () => {
-        setInitialAnimationsComplete(true);
+      const cameraDuration = cameraAnimation.getClip().duration;
+      const objectDuration = objectAnimation.getClip().duration;
+      const cameraInitialPoint = cameraDuration * INITIAL_ANIMATION_PERCENTAGE;
+      const objectInitialPoint = objectDuration * INITIAL_ANIMATION_PERCENTAGE;
+
+      cameraAnimation.play();
+      objectAnimation.play();
+      cameraAnimation.time = 0;
+      objectAnimation.time = 0;
+      mixer.update(0);
+
+      initialTimeoutRef.current = setTimeout(() => {
+        cameraAnimation.time = cameraInitialPoint;
+        objectAnimation.time = objectInitialPoint;
+        mixer.update(0);
         
-        // Switch to Camera2
-        const camera2 = cameras.find(camera => camera.name === "Camera2");
-        if (camera2) {
-          camera2.matrixAutoUpdate = true;
-          set({ camera: camera2 });
+        // Store camera matrix at pause point
+        if (initialCameraRef.current) {
+          cameraMatrixRef.current = initialCameraRef.current.matrix.clone();
+          initialCameraRef.current.updateMatrixWorld(true);
         }
-
-        // Set up scroll-controlled animations
-        const cameraAnimation2 = mixer.clipAction(animations[1]);
-        const objectAnimation2 = mixer.clipAction(animations[3]);
-
-        cameraAnimation2.setLoop(THREE.LoopOnce, 1);
-        objectAnimation2.setLoop(THREE.LoopOnce, 1);
-        cameraAnimation2.clampWhenFinished = true;
-        objectAnimation2.clampWhenFinished = true;
-
-        // Store references for use in useFrame
-        cameraAnimation2Ref.current = cameraAnimation2;
-        objectAnimation2Ref.current = objectAnimation2;
-
-        // Start the animations but pause them immediately
-        cameraAnimation2.play().paused = true;
-        objectAnimation2.play().paused = true;
-      };
-
-      // Listen for the end of the longer animation
-      const duration = Math.max(cameracameraAnimation2.getClip().duration, objectcameraAnimation2.getClip().duration);
-      setTimeout(onAnimationComplete, duration * 1000);
+        
+        setInitialAnimationsComplete(true);
+      }, Math.max(cameraInitialPoint, objectInitialPoint) * 1000);
 
       return () => {
+        if (initialTimeoutRef.current) {
+          clearTimeout(initialTimeoutRef.current);
+        }
         mixer.stopAllAction();
       };
     }
   }, [scene, animations, cameras, mixer, onLoadingComplete, set]);
 
-  useFrame((_, delta) => {
-    if (!mixer || !animations) return;
+  useFrame(() => {
+    if (!mixer || !animations || !initialAnimationsComplete) return;
 
     try {
-      mixer.update(delta);
-
-      // Update scroll-controlled animations
-      if (initialAnimationsComplete && cameraAnimation2Ref.current && objectAnimation2Ref.current) {
+      if (cameraAnimation1Ref.current && objectAnimation1Ref.current && initialCameraRef.current && cameraMatrixRef.current) {
         const scrollPos = scrollProgress.get();
-        const cameraAnimation2Duration = cameraAnimation2Ref.current.getClip().duration;
-        const objectAnimation2Duration = objectAnimation2Ref.current.getClip().duration;
+        const cameraDuration = cameraAnimation1Ref.current.getClip().duration;
+        const objectDuration = objectAnimation1Ref.current.getClip().duration;
 
-        // Set the time of both animations based on scroll position
-        cameraAnimation2Ref.current.time = scrollPos * cameraAnimation2Duration;
-        objectAnimation2Ref.current.time = scrollPos * objectAnimation2Duration;
+        const cameraRemainingTime = cameraDuration * (1 - INITIAL_ANIMATION_PERCENTAGE);
+        const objectRemainingTime = objectDuration * (1 - INITIAL_ANIMATION_PERCENTAGE);
+
+        const cameraTime = (cameraDuration * INITIAL_ANIMATION_PERCENTAGE) + 
+          (scrollPos * cameraRemainingTime);
+        const objectTime = (objectDuration * INITIAL_ANIMATION_PERCENTAGE) + 
+          (scrollPos * objectRemainingTime);
+
+        // Update animations
+        cameraAnimation1Ref.current.time = cameraTime;
+        objectAnimation1Ref.current.time = objectTime;
+        mixer.update(0);
+
+        // Restore camera position if at initial percentage
+        if (scrollPos === 0) {
+          initialCameraRef.current.matrix.copy(cameraMatrixRef.current);
+          initialCameraRef.current.updateMatrixWorld(true);
+        }
       }
     } catch (error) {
       console.error('Error updating animations:', error);
@@ -112,5 +123,4 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
   );
 }
 
-// Pre-load the model
-useGLTF.preload('/src/assets/showerhead attempt 2 v6.02.glb');
+useGLTF.preload('/src/assets/showerhead attempt 3 v1.2.glb');

@@ -1,4 +1,4 @@
-import { Suspense, useRef } from 'react';
+import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Html, useProgress, Float } from '@react-three/drei';
 import { MotionValue } from 'framer-motion';

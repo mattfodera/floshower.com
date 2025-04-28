@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -20,20 +21,18 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
   const cameraAnimation1Ref = useRef<THREE.AnimationAction | null>(null);
   const objectAnimation1Ref = useRef<THREE.AnimationAction | null>(null);
   const initialTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const initialCameraRef = useRef<THREE.Camera | null>(null);
+  const initialCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const cameraMatrixRef = useRef<THREE.Matrix4 | null>(null);
   const lightRef = useRef<THREE.Light | null>(null);
   
   const INITIAL_ANIMATION_PERCENTAGE = 0.466;
-  const LIGHT_CHANGE_THRESHOLD = 0.25; // 25% threshold for light color change
+  const LIGHT_CHANGE_THRESHOLD = 0.25;
   
   useEffect(() => {
     if (scene && animations && onLoadingComplete) {
-      // Find and store the light reference
       scene.traverse((child) => {
         if (child.name === "Light001" && child instanceof THREE.Light) {
           lightRef.current = child;
-          // Start with green
           child.color.setRGB(0, 1, 0);
         }
       });
@@ -41,17 +40,17 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
     }
 
     if (cameras && cameras.length > 0) {
-      const initialCamera = cameras.find(camera => camera.name === "Camera1");
-      if (initialCamera) {
-        initialCamera.matrixAutoUpdate = true;
-        initialCameraRef.current = initialCamera;
-        set({ camera: initialCamera });
+      const camera = cameras.find(camera => camera.name === "Camera1");
+      if (camera && camera instanceof THREE.PerspectiveCamera) {
+        camera.matrixAutoUpdate = true;
+        initialCameraRef.current = camera;
+        set({ camera });
       }
     }
 
     if (mixer && animations) {
-      const cameraAnimation = mixer.clipAction(animations[0]);
-      const objectAnimation = mixer.clipAction(animations[1]);
+      const cameraAnimation = mixer.clipAction(animations[1]);
+      const objectAnimation = mixer.clipAction(animations[0]);
 
       cameraAnimation1Ref.current = cameraAnimation;
       objectAnimation1Ref.current = objectAnimation;
@@ -111,21 +110,18 @@ export function ShowerheadModel1({ scrollProgress, onLoadingComplete }: Showerhe
         const objectTime = (objectDuration * INITIAL_ANIMATION_PERCENTAGE) + 
           (scrollPos * objectRemainingTime);
 
-        // Update animations
         cameraAnimation1Ref.current.time = cameraTime;
         objectAnimation1Ref.current.time = objectTime;
         mixer.update(0);
 
-        // Update light color based on scroll progress
         if (lightRef.current) {
           if (scrollPos >= LIGHT_CHANGE_THRESHOLD) {
-            lightRef.current.color.setRGB(1, 0, 0); // Red
+            lightRef.current.color.setRGB(1, 0, 0);
           } else {
-            lightRef.current.color.setRGB(0, 1, 0); // Green
+            lightRef.current.color.setRGB(0, 1, 0);
           }
         }
 
-        // Restore camera position if at initial percentage
         if (scrollPos === 0) {
           initialCameraRef.current.matrix.copy(cameraMatrixRef.current);
           initialCameraRef.current.updateMatrixWorld(true);
